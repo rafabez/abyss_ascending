@@ -1,0 +1,2 @@
+# abyss_ascending
+ A web-based text RPG that immerses players in a sci‑fi underwater odyssey. This repository features a robust HTML/CSS/JS interface that uses Pollinations' API to dynamically generate and transition background images. It includes a transformation engine to convert narrative text into concise image prompts and employs a polling mechanism for flawless image retrieval and seamless background updates.
