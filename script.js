@@ -131,7 +131,7 @@ function showNotification(message) {
  */
 async function transformToImagePrompt(content) {
   const transformRequest = {
-    model: "openai-large",
+    model: "llama",
     messages: [
       {
         role: "system",
@@ -266,7 +266,7 @@ async function sendMessage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "openai-large",
+        model: "llama",
         messages: messages,
       }),
     });
