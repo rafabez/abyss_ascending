@@ -1,0 +1,234 @@
+/* Global Reset / Box Sizing */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Body / Overall Layout */
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #000;
+  font-family: Arial, sans-serif;
+  color: #00FFFF;
+  position: relative;
+  overflow: hidden;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Background Layers */
+.background-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  transition: opacity 1s ease-in-out;
+  z-index: -1;
+}
+.background-layer.top {
+  opacity: 0;
+}
+.background-layer.bottom {
+  opacity: 1;
+}
+
+/* Header Styling with Orbitron font and neon glow */
+header {
+  text-align: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.4);
+}
+header h1,
+header h2 {
+  font-family: 'Orbitron', sans-serif;
+  text-shadow: 0 0 10px #00FFFF, 0 0 20px #00FFFF;
+  margin-bottom: 10px;
+}
+header h1 {
+  font-size: 2.2em;
+}
+header h2 {
+  font-size: 1.3em;
+  font-weight: 400;
+  color: #00FFFF;
+}
+
+/* Glowing Border Utility */
+.glow-border {
+  border: 2px solid #00FFFF;
+  box-shadow: 0 0 15px #00FFFF;
+  border-radius: 50px;
+}
+
+/* Chat Container styled as a spaceship cockpit screen */
+#chat-container {
+  flex: 1;
+  width: 90%;
+  max-width: 800px;
+  margin: 20px auto;
+  padding: 20px;
+  background-color: rgba(0, 0, 0, 0.8);
+  overflow-y: auto;
+  position: relative;
+}
+
+/* Desktop Centering adjustments */
+@media (min-width: 768px) {
+  #chat-container {
+    width: 60%;
+  }
+}
+
+/* Messages Area with terminal style font */
+#messages {
+  width: 100%;
+  background-color: transparent;
+  max-height: 100%;
+  overflow-y: auto;
+  padding: 1em 0;
+}
+.message {
+  margin-bottom: 1em;
+  line-height: 1.5;
+  border-radius: 6px;
+  padding: 0.8em;
+  white-space: pre-wrap;
+  font-family: 'VT323', monospace;
+  font-size: 1.2em;
+}
+.user-message {
+  background-color: rgba(255, 255, 255, 0.1);
+  margin-left: auto;
+  text-align: right;
+}
+.gpt-message {
+  background-color: rgba(255, 255, 255, 0.05);
+  margin-right: auto;
+  text-align: left;
+}
+
+/* Input Area styling to match cockpit style */
+#input-area {
+  width: 90%;
+  max-width: 800px;
+  margin: 10px auto 20px;
+  padding: 10px;
+  display: flex;
+  gap: 0.5em;
+  background-color: rgba(0, 0, 0, 0.9);
+}
+
+/* Input Field styled as a terminal input with no border */
+#userInput {
+  flex: 1;
+  height: 60px;
+  resize: none;
+  border: none;
+  border-radius: 38px;
+  background-color: #111;
+  color: #00FFFF;
+  padding: 0.8em;
+  font-size: 1.2em;
+  font-family: 'VT323', monospace;
+  box-shadow: 0 0 0px #00FFFF;
+}
+#userInput::placeholder {
+  color: #7af0f0;
+}
+
+/* Send Button styled to match terminal/cockpit interface and round shape */
+#sendBtn {
+  background-color: transparent;
+  border: 2px solid #00FFFF;
+  color: #00FFFF;
+  border-radius: 50px;
+  cursor: pointer;
+  padding: 0.8em 1em;
+  font-family: 'VT323', monospace;
+  font-size: 1.2em;
+  transition: background-color 0.3s ease;
+}
+#sendBtn:hover {
+  background-color: rgba(0, 255, 255, 0.2);
+}
+
+/* Mobile Adjustments */
+@media (max-width: 768px) {
+  header h1 {
+    font-size: 1.8em;
+  }
+  header h2 {
+    font-size: 1.1em;
+  }
+  #messages {
+    font-size: 1.1em;
+  }
+  #userInput {
+    height: 80px;
+    font-size: 1.5em;
+  }
+  #sendBtn {
+    font-size: 1.5em;
+    padding: 1em;
+  }
+  #input-area {
+    padding: 1em;
+  }
+}
+
+/* Notification Styles */
+#notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  padding: 15px 20px;
+  border-radius: 5px;
+  display: none;
+  z-index: 1001;
+  font-family: Arial, sans-serif;
+}
+#notification.show {
+  display: flex;
+  align-items: center;
+  animation: fadein 0.5s, fadeout 0.5s 2.5s;
+}
+@keyframes fadein {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes fadeout {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+/* For Firefox */
+#messages {
+  scrollbar-width: thin;
+  scrollbar-color: #00FFFF rgba(0, 0, 0, 0.5);
+}
+
+/* For WebKit browsers */
+#messages::-webkit-scrollbar {
+  width: 8px;
+}
+
+#messages::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 10px;
+}
+
+#messages::-webkit-scrollbar-thumb {
+  background: #00FFFF;
+  border-radius: 10px;
+}
+
+#messages::-webkit-scrollbar-thumb:hover {
+  background: #00CCCC;
+}

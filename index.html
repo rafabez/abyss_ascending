@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"> 
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <meta property="og:title" content="Abyss Ascending: Generative OceaniCosmic Adventure" />
+  <meta property="og:description" content="Embark on a cosmic ocean adventure through uncharted depths and space underwater in this immersive text-based RPG." />
+  <meta property="og:image" content="https://interzone.art.br/abyss_ascending/thumb.png" />
+  <meta property="og:url" content="https://interzone.art.br/abyss_ascending" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Abyss Ascending" />
+  <meta property="og:image:alt" content="Abyss Ascending Adventure Thumbnail" />
+  
+  <!-- Optional: Twitter Card Meta Tags -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Abyss Ascending: Generative OceanicCosmic Adventure" />
+  <meta name="twitter:description" content="Embark on an oceanic cosmic ocean adventure through uncharted depths and space underwater in this immersive text-based RPG." />
+  <meta name="twitter:image" content="https://interzone.art.br/abyss_ascending/thumb.png" />
+  
+  <title>Abyss Ascending: Generative Cosmic Adventure</title>
+  
+  <!-- Google Fonts: Orbitron for titles and VT323 for terminal style -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Background Layers -->
+  <div class="background-layer bottom" id="bg-bottom"></div>
+  <div class="background-layer top" id="bg-top"></div>
+
+  <header>
+    <h1>Abyss Ascending</h1>
+    <h2>A Generative Cosmic Ocean Text Adventure</h2>
+  </header>
+
+  <!-- Chat/Cockpit Panel -->
+  <div id="chat-container" class="glow-border">
+    <div id="messages">
+      <div class="message gpt-message">
+        <strong>Greetings, Captain.</strong><br>
+        This is the Abyssal Interface, your guide to the unknown depths. The cosmic oceans beyond are uncharted, ancient, and alive with whispers of secrets yet to be uncovered.<br><br>
+        The crew looks to you for guidance. The abyss awaits your command.<br><br>
+        <strong>What stirs within you, Captain?</strong> Type your thoughts to begin the journey.
+      </div>
+    </div>
+  </div>
+
+  <!-- Notification -->
+  <div id="notification"></div>
+
+  <!-- Input Area -->
+  <div id="input-area" class="glow-border">
+    <textarea id="userInput" placeholder="Enter your action or dialogue..." rows="2"></textarea>
+    <button id="sendBtn">Send</button>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
