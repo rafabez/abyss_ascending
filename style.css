@@ -11,7 +11,7 @@ body {
   padding: 0;
   background-color: #000;
   font-family: Arial, sans-serif;
-  color: #00FFFF;
+  color: #9af5f5;
   position: relative;
   overflow: hidden;
   height: 100vh;
@@ -47,7 +47,7 @@ header {
 header h1,
 header h2 {
   font-family: 'Orbitron', sans-serif;
-  text-shadow: 0 0 10px #00FFFF, 0 0 20px #00FFFF;
+  text-shadow: 0 0 10px #caf2f2, 0 0 20px #00FFFF;
   margin-bottom: 10px;
 }
 header h1 {
@@ -56,7 +56,7 @@ header h1 {
 header h2 {
   font-size: 1.3em;
   font-weight: 400;
-  color: #00FFFF;
+  color: #9af5f5;
 }
 
 /* Glowing Border Utility */
@@ -158,77 +158,121 @@ header h2 {
   background-color: rgba(0, 255, 255, 0.2);
 }
 
-/* Mobile Adjustments */
-@media (max-width: 768px) {
-  header h1 {
-    font-size: 1.8em;
-  }
-  header h2 {
-    font-size: 1.1em;
-  }
-  #messages {
-    font-size: 1.1em;
-  }
-  #userInput {
-    height: 80px;
-    font-size: 1.5em;
-  }
-  #sendBtn {
-    font-size: 1.5em;
-    padding: 1em;
-  }
-  #input-area {
-    padding: 1em;
-  }
+/* Sound Controls Panel */
+#sound-controls {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.9);
+  border: 2px solid #00FFFF;
+  box-shadow: 0 0 15px #00FFFF;
+  border-radius: 50px;
+  padding: 15px;
+  gap: 10px;
+  width: 70px;
 }
 
-/* Notification Styles */
-#notification {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  background: rgba(0, 0, 0, 0.8);
-  color: #fff;
-  padding: 15px 20px;
-  border-radius: 5px;
-  display: none;
-  z-index: 1001;
-  font-family: Arial, sans-serif;
+/* Volume Slider */
+#volumeSlider {
+  appearance: none;
+  width: 80px;
+  height: 120px;
+  background: transparent;
+  transform: rotate(-90deg);
+  margin-bottom: 10px;
 }
-#notification.show {
+
+/* Slider Track */
+#volumeSlider::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 3px;
+  background: #111;
+  border: 1px solid #00FFFF;
+  border-radius: 3px;
+  box-shadow: 0 0 5px #00FFFF;
+}
+#volumeSlider::-moz-range-track {
+  width: 100%;
+  height: 3px;
+  background: #111;
+  border: 1px solid #00FFFF;
+  border-radius: 3px;
+  box-shadow: 0 0 5px #00FFFF;
+}
+
+#volumeSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 6px;
+  height: 15px;
+  background: #00FFFF;
+  border: 2px solid #00FFFF;
+  border-radius: 3px;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
+  margin-top: -5px; /* Adjust this based on your track height */
+}
+
+#volumeSlider::-moz-range-thumb {
+  width: 6x;
+  height: 15px;
+  background: #00FFFF;
+  border: 2px solid #00FFFF;
+  border-radius: 3px;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
+}
+
+/* Adjust track to match new thumb size */
+#volumeSlider::-webkit-slider-runnable-track {
+  height: 4px; /* Slightly thicker track */
+  margin: 8px 0; /* Add margin for thumb clearance */
+}
+
+#volumeSlider::-moz-range-track {
+  height: 12x;
+}
+
+/* Hover Effect */
+#volumeSlider::-webkit-slider-thumb:hover,
+#volumeSlider::-moz-range-thumb:hover {
+  background: linear-gradient(145deg, #00FFFF, #00CCCC); /* Brighter cyan */
+  box-shadow: 0 0 18px rgba(0, 255, 255, 0.9);
+}
+
+/* Active Effect */
+#volumeSlider::-webkit-slider-thumb:active,
+#volumeSlider::-moz-range-thumb:active {
+  transform: scale(1.1);
+  box-shadow: 0 0 20px rgba(0, 255, 255, 1);
+}
+
+/* Mute Button */
+#muteBtn {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 2px solid #00FFFF;
+  background: rgba(0, 0, 0, 0.8);
+  box-shadow: 0 0 10px #00FFFF;
   display: flex;
   align-items: center;
-  animation: fadein 0.5s, fadeout 0.5s 2.5s;
-}
-@keyframes fadein {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-@keyframes fadeout {
-  from { opacity: 1; }
-  to { opacity: 0; }
-}
-/* For Firefox */
-#messages {
-  scrollbar-width: thin;
-  scrollbar-color: #00FFFF rgba(0, 0, 0, 0.5);
+  justify-content: center;
+  cursor: pointer;
 }
 
-/* For WebKit browsers */
+/* Scrollbar Styling */
 #messages::-webkit-scrollbar {
   width: 8px;
 }
-
 #messages::-webkit-scrollbar-track {
   background: rgba(0, 0, 0, 0.5);
   border-radius: 10px;
 }
-
 #messages::-webkit-scrollbar-thumb {
   background: #00FFFF;
   border-radius: 10px;
 }
-
 #messages::-webkit-scrollbar-thumb:hover {
   background: #00CCCC;
 }

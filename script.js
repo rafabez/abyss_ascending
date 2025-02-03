@@ -1,17 +1,22 @@
-// Replace with your Pollinations API Key if required
+// Global Variables and DOM Elements
 const messagesDiv = document.getElementById("messages");
 const userInput = document.getElementById("userInput");
 const sendBtn = document.getElementById("sendBtn");
 const notification = document.getElementById("notification");
 
-// System Prompt as per your lore
+// Global variables to manage looping music
+let currentMusicPart = null;
+let currentSynths = [];
+let currentEffectNodes = [];
+
+// System prompt and initial messages for the RPG
 const systemPrompt = `Abyss Ascending: A Cosmic Ocean Adventure RPG
 
-Purpose of GPT:
-This GPT, titled "Abyss Ascending," is crafted to offer an immersive text-based RPG experience, blending science fiction adventure with subtle environmental themes, all set within an intriguing oceanic and space exploration narrative.
+Your purpose:
+You are titled "Abyss Ascending," crafted to offer an immersive text-based RPG experience, blending science fiction adventure with subtle environmental themes, all set within an intriguing oceanic and space exploration narrative.
 
 Knowledge Field/Area of Expertise:
-The GPT is an expert in Interactive Fiction and RPG Game Mechanics, focusing on Sci-Fi and Oceanic World Building. It excels in crafting compelling narratives and integrating environmental themes into the story.
+You are an expert in Interactive Fiction and RPG Game Mechanics, focusing on Sci-Fi and Oceanic World Building. It excels in crafting compelling narratives and integrating environmental themes into the story.
 
 The Player:
 The Player is Captain Delyra Voss, commander of the advanced submersible spacecraft, CosmoNautilux.
@@ -25,14 +30,11 @@ Task Breakdown:
 6. Environmental Themes Integration: Weave environmental themes into the story to complement the narrative.
 
 Important Note:
-Respond in a text-adventure style, guiding the player through the story and offering relevant narrative and choices. Offer 5 choices every time. And BE CONCISE ON THE TEXT PLEASE, SHORT AND CONCISE.
+Respond in a text-adventure style, guiding the player through the story and offering relevant narrative and choices. Offer 5 choices every time. Don´t make the text tooo long, please.
 `;
 
 let messages = [
-  {
-    role: "system",
-    content: systemPrompt,
-  },
+  { role: "system", content: systemPrompt },
   {
     role: "assistant",
     content:
@@ -40,28 +42,17 @@ let messages = [
   },
 ];
 
-/**
- * Parses markdown-like syntax to HTML.
- * Supports bold (**text**) and italics (*text*).
- * @param {string} text - The text to parse.
- * @returns {string} - The parsed HTML string.
- */
+// Utility: Parse Markdown for bold and italic formatting.
 function parseMarkdown(text) {
   text = text.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
   text = text.replace(/\*(.*?)\*/g, "<em>$1</em>");
   return text;
 }
 
-/**
- * Adds a user message to the UI.
- * Removes any existing user message with the same class.
- * @param {string} text - The message text.
- * @param {string} cssClass - The CSS class for styling.
- */
+// UI: Add user message to chat
 function addUserMessageToUI(text, cssClass) {
   const existingUserMessages = messagesDiv.querySelectorAll(`.message.${cssClass}`);
   existingUserMessages.forEach(msg => msg.remove());
-
   const msgDiv = document.createElement("div");
   msgDiv.classList.add("message", cssClass);
   msgDiv.innerHTML = parseMarkdown(text);
@@ -69,26 +60,17 @@ function addUserMessageToUI(text, cssClass) {
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
-/**
- * Adds an assistant message to the UI with a typewriter effect.
- * Replaces existing assistant messages with the same class.
- * @param {string} text - The message text.
- * @param {string} cssClass - The CSS class for styling.
- * @param {function} callback - Function to call after typing is complete.
- */
+// UI: Add assistant message with typing effect
 function addAssistantMessageToUI(text, cssClass, callback) {
   const existingAssistantMessages = messagesDiv.querySelectorAll(`.message.${cssClass}`);
   existingAssistantMessages.forEach(msg => msg.remove());
-
   const msgDiv = document.createElement("div");
   msgDiv.classList.add("message", cssClass);
   messagesDiv.appendChild(msgDiv);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
-
   let parsedText = parseMarkdown(text);
   let index = 0;
-  const speed = 10; // Typing speed in milliseconds per character
-
+  const speed = 10;
   function type() {
     if (index < parsedText.length) {
       if (parsedText[index] === '<') {
@@ -111,10 +93,7 @@ function addAssistantMessageToUI(text, cssClass, callback) {
   type();
 }
 
-/**
- * Shows a notification message.
- * @param {string} message - The message to display.
- */
+// Notification display
 function showNotification(message) {
   notification.textContent = message;
   notification.classList.add("show");
@@ -123,56 +102,53 @@ function showNotification(message) {
   }, 3000);
 }
 
-/**
- * Transforms the assistant's text response into a very short image prompt.
- * It sends a new prompt request using the content of the assistant's response.
- * @param {string} content - The assistant's text response.
- * @returns {Promise<string>} - The transformed short image prompt.
- */
+// Transformation functions for image and music prompts
 async function transformToImagePrompt(content) {
   const transformRequest = {
     model: "llama",
     messages: [
-      {
-        role: "system",
-        content: "You are a transformation engine that converts verbose content into a very short image prompt."
-      },
-      {
-        role: "user",
-        content: `TRANSFORM THIS CONTENT TO A VERY SHORT IMAGE PROMPT: ${content}`
-      }
+      { role: "system", content: "You are a transformation engine that converts verbose content into a very short image prompt." },
+      { role: "user", content: `TRANSFORM THIS CONTENT TO A VERY SHORT IMAGE PROMPT: ${content}` }
     ]
   };
-
   try {
     const response = await fetch("https://text.pollinations.ai/openai", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(transformRequest)
     });
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const data = await response.json();
-    if (data?.choices?.length > 0) {
-      return data.choices[0].message.content.trim();
-    } else {
-      return "";
-    }
+    return data?.choices?.length > 0 ? data.choices[0].message.content.trim() : "";
   } catch (error) {
     console.error("Error transforming content:", error);
     return "";
   }
 }
 
-/**
- * Polls the image URL repeatedly until a valid image is returned or a timeout is reached.
- * Updates the URL parameter (timestamp) on each poll.
- * @param {string} formattedPrompt - The final prompt string (already sanitized and encoded).
- * @param {number} maxTime - Maximum time to poll in milliseconds (default: 30000).
- * @param {number} interval - Polling interval in milliseconds (default: 1000).
- * @returns {Promise<{blob: Blob, url: string}>} - Resolves with the image blob and URL.
- */
+async function transformToMusicPrompt(content) {
+  const transformRequest = {
+    model: "llama",
+    messages: [
+      { role: "system", content: "You are a transformation engine that converts verbose content into a very short music prompt consisting of 3 to 5 words." },
+      { role: "user", content: `TRANSFORM THIS CONTENT TO A VERY SHORT MUSIC PROMPT: ${content}` }
+    ]
+  };
+  try {
+    const response = await fetch("https://text.pollinations.ai/openai", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(transformRequest)
+    });
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    const data = await response.json();
+    return data?.choices?.length > 0 ? data.choices[0].message.content.trim() : "";
+  } catch (error) {
+    console.error("Error transforming content to music prompt:", error);
+    return "";
+  }
+}
+
 async function pollForImage(formattedPrompt, maxTime = 30000, interval = 1000) {
   const start = Date.now();
   let currentUrl = "";
@@ -184,60 +160,29 @@ async function pollForImage(formattedPrompt, maxTime = 30000, interval = 1000) {
         const blob = await response.blob();
         return { blob, url: currentUrl };
       }
-    } catch (e) {
-      // Ignore fetch errors and continue polling
-    }
+    } catch (e) {}
     await new Promise(resolve => setTimeout(resolve, interval));
   }
   throw new Error("Timeout while polling for image.");
 }
 
-/**
- * Generates and transitions the background image based on the assistant's response.
- * First, it transforms the assistant text into a very short image prompt,
- * then appends style keywords, sanitizes and encodes the final prompt,
- * and polls the image API until the image is ready.
- * The background change is triggered as soon as the image is available.
- * @param {string} assistantText - The full text response from the assistant.
- */
 async function generateImage(assistantText) {
-  // Transform the assistant's text into a very short image prompt.
   let shortPrompt = await transformToImagePrompt(assistantText);
-  
-  // If the transformation returns an empty prompt, fall back to a default prompt.
-  if (!shortPrompt) {
-    shortPrompt = "Abstract cosmic ocean";
-  }
-  
-  // Sanitize the short prompt: remove any characters except letters, numbers, and spaces.
+  if (!shortPrompt) shortPrompt = "Abstract cosmic ocean";
   shortPrompt = shortPrompt.replace(/[^\w\s]/gi, '');
-  
-  // Define style keywords.
   const styleKeywords = "Style keywords: Cosmic Ocean, Space Underwater, Sci-Fi, Futuristic, Avatar Movie Style";
-  
-  // Combine the short prompt and style keywords.
   const finalImagePrompt = `${shortPrompt} ${styleKeywords}`;
-  
-  // Further sanitize the final prompt (allowing commas if desired).
   const sanitizedPrompt = finalImagePrompt.replace(/[^\w\s,]/gi, '');
-  
   const formattedPrompt = encodeURIComponent(sanitizedPrompt.trim());
-  
   console.log(`Generating image with prompt: "${sanitizedPrompt}"`);
-  
   try {
-    // Poll for the image until it's available.
     const { blob: imgBlob, url: imageUrl } = await pollForImage(formattedPrompt, 30000, 1000);
     console.log(`Image ready at URL: ${imageUrl}`);
     const imgObjectURL = URL.createObjectURL(imgBlob);
-
     const bgTop = document.getElementById("bg-top");
     const bgBottom = document.getElementById("bg-bottom");
-
-    // Trigger background change immediately once the image is ready.
     bgTop.style.backgroundImage = `url('${imgObjectURL}')`;
     bgTop.style.opacity = 1;
-
     bgTop.addEventListener('transitionend', function handler() {
       bgTop.removeEventListener('transitionend', handler);
       bgBottom.style.backgroundImage = `url('${imgObjectURL}')`;
@@ -250,39 +195,129 @@ async function generateImage(assistantText) {
   }
 }
 
-/**
- * Sends the user's message to the Pollinations API and handles the response.
- */
-async function sendMessage() {
-  const userText = userInput.value.trim();
-  if (!userText) return;
-
-  addUserMessageToUI(userText, "user-message");
-  messages.push({ role: "user", content: userText });
-  userInput.value = "";
-
+async function generateMusic(assistantText) {
+  let musicPrompt = await transformToMusicPrompt(assistantText);
+  if (!musicPrompt) musicPrompt = "Ambient cosmic melody";
+  console.log(`Generating music with prompt: "${musicPrompt}"`);
   try {
     const response = await fetch("https://text.pollinations.ai/openai", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "llama",
-        messages: messages,
-      }),
+        messages: [
+          { role: "system", content: "You are a helpful assistant." },
+          { role: "user", content: musicPrompt }
+        ],
+        seed: 42,
+        model: "midijourney"
+      })
     });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    const data = await response.json();
+    const content = data.content || (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "";
+    const notationRegex = /notation:\s*\|-\s*\n([\s\S]*)/i;
+    const notationMatch = content.match(notationRegex);
+    if (!notationMatch) {
+      console.error("No notation block found in the music API response.");
+      return;
     }
+    const notationBlock = notationMatch[1];
+    let noteLines = notationBlock.split('\n').map(line => line.trim()).filter(line => line !== "");
+    if (noteLines.length && noteLines[0].toLowerCase().startsWith('pitch')) {
+      noteLines.shift();
+    }
+    const notes = noteLines.map(line => {
+      const parts = line.split(',');
+      return {
+        pitch: parseInt(parts[0].trim(), 10),
+        time: parseFloat(parts[1].trim()),
+        duration: parseFloat(parts[2].trim()),
+        velocity: parseInt(parts[3].trim(), 10)
+      };
+    });
+    if (currentMusicPart) {
+      currentMusicPart.stop();
+      currentMusicPart.dispose();
+      currentMusicPart = null;
+    }
+    if (currentSynths.length) {
+      currentSynths.forEach(synth => synth.dispose());
+      currentSynths = [];
+    }
+    if (currentEffectNodes.length) {
+      currentEffectNodes.forEach(node => node.dispose());
+      currentEffectNodes = [];
+    }
+    await Tone.start();
+    if (Tone.Transport.state !== "started") {
+      Tone.Transport.start();
+    }
+    const delay1 = new Tone.FeedbackDelay({ delayTime: 1.8, feedback: 0.25 });
+    const reverb1 = new Tone.Reverb({ decay: 8, preDelay: 0.3 }).toDestination();
+    const synth1 = new Tone.FMSynth({
+      harmonicity: 2,
+      oscillator: { type: "sine" },
+      envelope: { attack: 5, decay: 3, sustain: 0.8, release: 10 },
+      modulation: { type: "sine" },
+      modulationEnvelope: { attack: 2, decay: 2, sustain: 0.8, release: 5 }
+    }).chain(delay1, reverb1);
+    const delay2 = new Tone.FeedbackDelay({ delayTime: 1.5, feedback: 0.3 });
+    const reverb2 = new Tone.Reverb({ decay: 7, preDelay: 0.25 }).toDestination();
+    const synth2 = new Tone.AMSynth({
+      oscillator: { type: "triangle" },
+      envelope: { attack: 3, decay: 2.5, sustain: 0.75, release: 8 }
+    }).chain(delay2, reverb2);
+    const chorus3 = new Tone.Chorus(4, 2.8, 0.6).start();
+    const delay3 = new Tone.FeedbackDelay({ delayTime: 1.3, feedback: 0.2 });
+    const reverb3 = new Tone.Reverb({ decay: 9, preDelay: 0.35 }).toDestination();
+    const synth3 = new Tone.Synth({
+      oscillator: { type: "sine" },
+      envelope: { attack: 4, decay: 2, sustain: 0.7, release: 9 }
+    }).chain(chorus3, delay3, reverb3);
+    currentSynths = [synth1, synth2, synth3];
+    currentEffectNodes.push(delay1, reverb1, delay2, reverb2, chorus3, delay3, reverb3);
+    const events = notes.map(note => {
+      const noteName = Tone.Frequency(note.pitch, "midi").toNote();
+      const velocity = note.velocity / 127;
+      return { time: note.time, noteName, duration: note.duration, velocity };
+    });
+    const loopEnd = events.reduce((max, ev) => Math.max(max, ev.time + ev.duration), 0);
+    const part = new Tone.Part((time, event) => {
+      synth1.triggerAttackRelease(event.noteName, event.duration, time, event.velocity);
+      synth2.triggerAttackRelease(event.noteName, event.duration, time, event.velocity);
+      synth3.triggerAttackRelease(event.noteName, event.duration, time, event.velocity);
+    }, events);
+    part.loop = true;
+    part.loopEnd = loopEnd;
+    part.start(0);
+    currentMusicPart = part;
+    
+    // (Note: The sound control event listeners are handled once in DOMContentLoaded.)
+    
+  } catch (error) {
+    console.error("Error generating music:", error);
+  }
+}
 
+async function sendMessage() {
+  const userText = userInput.value.trim();
+  if (!userText) return;
+  addUserMessageToUI(userText, "user-message");
+  messages.push({ role: "user", content: userText });
+  userInput.value = "";
+  try {
+    const response = await fetch("https://text.pollinations.ai/openai", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "llama", messages: messages }),
+    });
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const data = await response.json();
     if (data?.choices?.length > 0) {
       const assistantText = data.choices[0].message.content;
       messages.push({ role: "assistant", content: assistantText });
-      // Start background image generation using the new polling procedure.
       generateImage(assistantText);
-      // Start the typewriter effect for the assistant's text concurrently.
       addAssistantMessageToUI(assistantText, "gpt-message", () => {});
+      generateMusic(assistantText);
     } else {
       addAssistantMessageToUI("No response from the system.", "gpt-message", () => {});
     }
@@ -300,8 +335,51 @@ userInput.addEventListener("keydown", (e) => {
   }
 });
 
-// Initialize default background on load.
+// Initialize sound controls on DOMContentLoaded
 document.addEventListener("DOMContentLoaded", () => {
   const bgBottom = document.getElementById("bg-bottom");
   bgBottom.style.backgroundImage = "url('abyss_bg.webp')";
+  
+  // Sound control elements
+  const volumeSlider = document.getElementById("volumeSlider");
+  const muteBtn = document.getElementById("muteBtn");
+
+  // SVG icons for mute button.
+  const speakerIcon = `<svg width="24" height="24" viewBox="0 0 24 24" fill="#00FFFF" xmlns="http://www.w3.org/2000/svg">
+    <path d="M3 9v6h4l5 5V4L7 9H3z"/>
+    <path d="M14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" opacity=".6"/>
+  </svg>`;
+  const speakerMuteIcon = `<svg width="24" height="24" viewBox="0 0 24 24" fill="#00FFFF" xmlns="http://www.w3.org/2000/svg">
+    <path d="M16.5 12c0-1.77-.77-3.29-2-4.3v8.6c1.23-1.01 2-2.53 2-4.3z" opacity=".3"/>
+    <path d="M3 9v6h4l5 5V4L7 9H3z"/>
+    <path d="M2.1 2.1l19.8 19.8-1.41 1.41L16.5 19.5c-1.16.64-2.48 1-3.84 1-3.87 0-7-3.13-7-7 0-1.36.36-2.68 1-3.84L.69 3.51 2.1 2.1z"/>
+  </svg>`;
+
+  function updateVolume() {
+    const dB = parseFloat(volumeSlider.value);
+    Tone.Destination.volume.value = dB;
+    // If slider is adjusted, unmute automatically.
+    if (Tone.Destination.mute) {
+      Tone.Destination.mute = false;
+    }
+    updateMuteIcon();
+  }
+
+  function updateMuteIcon() {
+    if (Tone.Destination.mute) {
+      muteBtn.innerHTML = speakerMuteIcon;
+    } else {
+      muteBtn.innerHTML = speakerIcon;
+    }
+  }
+
+  muteBtn.addEventListener("click", () => {
+    // Toggle mute
+    Tone.Destination.mute = !Tone.Destination.mute;
+    updateMuteIcon();
+  });
+
+  volumeSlider.addEventListener("input", updateVolume);
+  updateVolume();
+  updateMuteIcon();
 });

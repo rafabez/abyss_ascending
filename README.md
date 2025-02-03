@@ -14,6 +14,8 @@
 - **🎨 AI-Generated Backgrounds:** Uses **Pollinations' API** to dynamically generate sci-fi oceanic visuals based on story progression.
 - **🔄 Seamless Background Transitions:** Implemented a **polling mechanism** to fetch images in real time for flawless transitions.
 - **🌌 Sci-Fi Themed UI:** A **futuristic terminal-style** chat system with a glowing, immersive design.
+- **🎵 Procedural Music Generation:** Dynamic MIDI-based soundscapes using **Tone.js** and **Midijourney** for an immersive audio experience.
+- **🎼 Sound Processing:** Adaptive audio manipulation with delay, reverb, and FM synthesis for deep atmospheric tension.
 - **⚡ Optimized Performance:** Efficient image handling and **auto-retry mechanisms** to ensure smooth image rendering.
 - **💻 Responsive Design:** Fully optimized for both **desktop and mobile devices**.
 
@@ -43,6 +45,8 @@ Then, visit `http://localhost:8000` in your browser.
 - **Frontend:** HTML, CSS, JavaScript
 - **AI-Generated Content:** [Pollinations API](https://pollinations.ai)
 - **Dynamic Backgrounds:** Fetching and real-time polling for seamless image transitions
+- **Audio Processing:** **Tone.js** for sound synthesis, adaptive ambient effects, and procedural music generation
+- **Music Prompt Processing:** **Midijourney** for generating short MIDI-based sequences
 - **UI Design:** Sci-Fi styled text-based interface with futuristic glowing elements
 
 ---
@@ -63,6 +67,20 @@ Then, visit `http://localhost:8000` in your browser.
 ### 🔄 Auto-Retry & Polling
 - The script continuously checks the image status and reattempts fetching if necessary.
 - This ensures that the generated image is always properly displayed without missing transitions.
+
+### 🎵 Music Generation Process
+1. **Extracts a short, contextually relevant music prompt** from the AI-generated text.
+2. **Converts the text prompt into a MIDI sequence** using Midijourney.
+3. **Processes the MIDI sequence** through **Tone.js** to generate ambient background music.
+4. **Applies effects** such as reverb, delay, and FM synthesis to create an immersive soundscape.
+5. **Loops the music dynamically**, adapting to story progression.
+
+---
+
+## 🖼️ Screenshots
+
+### Example Gameplay Scene
+![Abyss Ascending Screenshot](screenshot_AA_01.jpg)
 
 ---
 

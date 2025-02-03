@@ -3,7 +3,6 @@
 <head>
   <meta charset="utf-8"> 
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  
   <meta property="og:title" content="Abyss Ascending: Generative OceaniCosmic Adventure" />
   <meta property="og:description" content="Embark on a cosmic ocean adventure through uncharted depths and space underwater in this immersive text-based RPG." />
   <meta property="og:image" content="https://interzone.art.br/abyss_ascending/thumb.png" />
@@ -11,18 +10,25 @@
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="Abyss Ascending" />
   <meta property="og:image:alt" content="Abyss Ascending Adventure Thumbnail" />
-  
   <!-- Optional: Twitter Card Meta Tags -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Abyss Ascending: Generative OceanicCosmic Adventure" />
   <meta name="twitter:description" content="Embark on an oceanic cosmic ocean adventure through uncharted depths and space underwater in this immersive text-based RPG." />
   <meta name="twitter:image" content="https://interzone.art.br/abyss_ascending/thumb.png" />
-  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.39/Tone.js"></script>
   <title>Abyss Ascending: Generative Cosmic Adventure</title>
   
   <!-- Google Fonts: Orbitron for titles and VT323 for terminal style -->
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=VT323&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-WKZ1S8G6WK"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-WKZ1S8G6WK');
+  </script>
 </head>
 <body>
   <!-- Background Layers -->
@@ -53,6 +59,13 @@
   <div id="input-area" class="glow-border">
     <textarea id="userInput" placeholder="Enter your action or dialogue..." rows="2"></textarea>
     <button id="sendBtn">Send</button>
+  </div>
+
+  <!-- Sound Controls -->
+  <div id="sound-controls">
+    <!-- The slider is vertical; its value is in dB -->
+    <input type="range" id="volumeSlider" min="-80" max="0" step="1" value="-12" title="Volume">
+    <button id="muteBtn"></button>
   </div>
 
   <script src="script.js"></script>
