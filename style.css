@@ -7,14 +7,14 @@
 
 /* Body / Overall Layout */
 body {
-  margin: 0;
-  padding: 0;
+  /* Use our custom vh value to account for mobile browser chrome */
+  height: calc(var(--vh, 1vh) * 100);
+  padding-bottom: env(safe-area-inset-bottom); /* For devices with safe areas */
   background-color: #000;
   font-family: Arial, sans-serif;
   color: #9af5f5;
   position: relative;
   overflow: hidden;
-  height: 100vh;
   display: flex;
   flex-direction: column;
 }
@@ -123,8 +123,6 @@ header h2 {
   gap: 0.5em;
   background-color: rgba(0, 0, 0, 0.9);
 }
-
-/* Input Field styled as a terminal input with no border */
 #userInput {
   flex: 1;
   height: 60px;
@@ -141,8 +139,6 @@ header h2 {
 #userInput::placeholder {
   color: #7af0f0;
 }
-
-/* Send Button styled to match terminal/cockpit interface and round shape */
 #sendBtn {
   background-color: transparent;
   border: 2px solid #00FFFF;
@@ -158,24 +154,57 @@ header h2 {
   background-color: rgba(0, 255, 255, 0.2);
 }
 
-/* Sound Controls Panel */
-#sound-controls {
+/* Configuration Menu (replaces the old hamburger menu) */
+#config-menu {
   position: fixed;
-  bottom: 20px;
+  top: 20px;
   right: 20px;
-  display: flex;
+  z-index: 10;
+}
+
+@media (max-width: 768px) {
+  #config-menu {
+  top: 100px; /* Move 40px down more on mobile */
+  }
+}
+#menu-toggle {
+  background-color: transparent;
+  border: none; /* Removed circle around the icon */
+  box-shadow: none; /* Removed the shadow effect */
+  color: #00FFFF;
+  cursor: pointer;
+  font-size: 3em; /* Made the gear icon bigger */
+  width: auto;
+  height: auto;
+  display: inline-flex; /* Adjusted the display */
+  align-items: center;
+  justify-content: center;
+  visibility: visible; /* Compatibility fix for browsers */
+  /* Added fallback fonts to support the Unicode gear icon on mobile Firefox */
+  font-family: "Segoe UI Symbol", "Noto Color Emoji", "Apple Color Emoji", sans-serif;
+}
+#menu-toggle:hover {
+  background-color: rgba(0, 255, 255, 0.2);
+}
+.menu-content {
+  display: none;
   flex-direction: column;
   align-items: center;
   background: rgba(0, 0, 0, 0.9);
   border: 2px solid #00FFFF;
   box-shadow: 0 0 15px #00FFFF;
-  border-radius: 50px;
+  border-radius: 20px;
   padding: 15px;
   gap: 10px;
-  width: 70px;
+  position: absolute;
+  top: 70px;
+  right: 0;
+}
+#config-menu.active .menu-content {
+  display: flex;
 }
 
-/* Volume Slider */
+/* Sound Controls Slider */
 #volumeSlider {
   appearance: none;
   width: 80px;
@@ -184,8 +213,6 @@ header h2 {
   transform: rotate(-90deg);
   margin-bottom: 10px;
 }
-
-/* Slider Track */
 #volumeSlider::-webkit-slider-runnable-track {
   width: 100%;
   height: 3px;
@@ -202,7 +229,6 @@ header h2 {
   border-radius: 3px;
   box-shadow: 0 0 5px #00FFFF;
 }
-
 #volumeSlider::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 6px;
@@ -211,36 +237,28 @@ header h2 {
   border: 2px solid #00FFFF;
   border-radius: 3px;
   box-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
-  margin-top: -5px; /* Adjust this based on your track height */
+  margin-top: -5px;
 }
-
 #volumeSlider::-moz-range-thumb {
-  width: 6x;
+  width: 6px;
   height: 15px;
   background: #00FFFF;
   border: 2px solid #00FFFF;
   border-radius: 3px;
   box-shadow: 0 0 15px rgba(0, 255, 255, 0.8);
 }
-
-/* Adjust track to match new thumb size */
 #volumeSlider::-webkit-slider-runnable-track {
-  height: 4px; /* Slightly thicker track */
-  margin: 8px 0; /* Add margin for thumb clearance */
+  height: 4px;
+  margin: 8px 0;
 }
-
 #volumeSlider::-moz-range-track {
-  height: 12x;
+  height: 4px;
 }
-
-/* Hover Effect */
 #volumeSlider::-webkit-slider-thumb:hover,
 #volumeSlider::-moz-range-thumb:hover {
-  background: linear-gradient(145deg, #00FFFF, #00CCCC); /* Brighter cyan */
+  background: linear-gradient(145deg, #00FFFF, #00CCCC);
   box-shadow: 0 0 18px rgba(0, 255, 255, 0.9);
 }
-
-/* Active Effect */
 #volumeSlider::-webkit-slider-thumb:active,
 #volumeSlider::-moz-range-thumb:active {
   transform: scale(1.1);

@@ -16,7 +16,7 @@ Your purpose:
 You are titled "Abyss Ascending," crafted to offer an immersive text-based RPG experience, blending science fiction adventure with subtle environmental themes, all set within an intriguing oceanic and space exploration narrative.
 
 Knowledge Field/Area of Expertise:
-You are an expert in Interactive Fiction and RPG Game Mechanics, focusing on Sci-Fi and Oceanic World Building. It excels in crafting compelling narratives and integrating environmental themes into the story.
+You are an expert in Interactive Fiction and RPG Game Mechanics, focusing on Sci-Fi and Oceanic World Building. You excel in crafting compelling narratives and integrating environmental themes into the story.
 
 The Player:
 The Player is Captain Delyra Voss, commander of the advanced submersible spacecraft, CosmoNautilux.
@@ -205,10 +205,10 @@ async function generateMusic(assistantText) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         messages: [
-          { role: "system", content: "You are a helpful assistant." },
+          { role: "system", content: "You are a melody maker." },
           { role: "user", content: musicPrompt }
         ],
-        seed: 42,
+        seed: Math.floor(Math.random() * 1000000),
         model: "midijourney"
       })
     });
@@ -291,8 +291,6 @@ async function generateMusic(assistantText) {
     part.start(0);
     currentMusicPart = part;
     
-    // (Note: The sound control event listeners are handled once in DOMContentLoaded.)
-    
   } catch (error) {
     console.error("Error generating music:", error);
   }
@@ -305,10 +303,11 @@ async function sendMessage() {
   messages.push({ role: "user", content: userText });
   userInput.value = "";
   try {
+    const seed = Math.floor(Math.random() * 1000000); // Generate random seed
     const response = await fetch("https://text.pollinations.ai/openai", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model: "llama", messages: messages }),
+      body: JSON.stringify({ model: "llama", messages: messages, seed: seed }),
     });
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     const data = await response.json();
@@ -335,8 +334,15 @@ userInput.addEventListener("keydown", (e) => {
   }
 });
 
-// Initialize sound controls on DOMContentLoaded
 document.addEventListener("DOMContentLoaded", () => {
+  // Configuration Menu Toggle
+  const menuToggle = document.getElementById("menu-toggle");
+  const configMenu = document.getElementById("config-menu");
+
+  menuToggle.addEventListener("click", () => {
+    configMenu.classList.toggle("active");
+  });
+
   const bgBottom = document.getElementById("bg-bottom");
   bgBottom.style.backgroundImage = "url('abyss_bg.webp')";
   
@@ -358,7 +364,6 @@ document.addEventListener("DOMContentLoaded", () => {
   function updateVolume() {
     const dB = parseFloat(volumeSlider.value);
     Tone.Destination.volume.value = dB;
-    // If slider is adjusted, unmute automatically.
     if (Tone.Destination.mute) {
       Tone.Destination.mute = false;
     }
@@ -374,7 +379,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   muteBtn.addEventListener("click", () => {
-    // Toggle mute
     Tone.Destination.mute = !Tone.Destination.mute;
     updateMuteIcon();
   });
