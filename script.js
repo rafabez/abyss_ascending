@@ -562,4 +562,25 @@ document.addEventListener("DOMContentLoaded", () => {
   volumeSlider.addEventListener("input", updateVolume);
   updateVolume();
   updateMuteIcon();
+  
+  // Intro Screen Handling
+  const introOverlay = document.getElementById("intro-overlay");
+  const startJourneyBtn = document.getElementById("start-journey");
+  
+  startJourneyBtn.addEventListener("click", () => {
+    // Hide the intro overlay
+    introOverlay.classList.add("hidden");
+    
+    // Narrate the intro text
+    const introText = document.querySelector(".message.gpt-message").textContent;
+    generateNarration(introText);
+    
+    // Start Tone.js audio context (required after user interaction)
+    Tone.start();
+    
+    // After a short delay, remove the overlay completely to prevent any interference
+    setTimeout(() => {
+      introOverlay.style.display = "none";
+    }, 1000);
+  });
 });
