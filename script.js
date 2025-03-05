@@ -8,6 +8,7 @@ const notification = document.getElementById("notification");
 let currentMusicPart = null;
 let currentSynths = [];
 let currentEffectNodes = [];
+let currentAudio = null; // Add variable to store the current audio element
 
 // System prompt and initial messages for the RPG
 const systemPrompt = `Abyss Ascending: A Cosmic Ocean Adventure RPG
@@ -68,6 +69,9 @@ function addAssistantMessageToUI(text, cssClass, callback) {
   msgDiv.classList.add("message", cssClass);
   messagesDiv.appendChild(msgDiv);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  
+  // Generate narration audio for the text
+  generateNarration(text);
   
   // Check if text contains a numbered list of options (1-5)
   const hasNumberedList = text.match(/\n\d+\.\s+[^\n]+/g);
@@ -420,6 +424,42 @@ async function generateMusic(assistantText) {
   }
 }
 
+// New function to generate narration from text
+async function generateNarration(text) {
+  try {
+    // Stop any currently playing narration
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio = null;
+    }
+    
+    // Prepare the narration text with "Say:" prefix
+    const narrateText = `Say: ${text}`;
+    
+    // Create URL for the Pollinations audio API
+    const url = `https://text.pollinations.ai/${encodeURIComponent(narrateText)}?model=openai-audio&voice=nova`;
+    
+    console.log("Generating narration...");
+    
+    // Create audio element and set source
+    const audio = new Audio(url);
+    
+    // Set volume to match the current system volume
+    audio.volume = Tone.Destination.mute ? 0 : Math.pow(10, Tone.Destination.volume.value / 20);
+    
+    // Start playing once loaded
+    audio.addEventListener('canplaythrough', () => {
+      audio.play().catch(e => console.error("Error playing audio:", e));
+    });
+    
+    // Store reference to control later if needed
+    currentAudio = audio;
+    
+  } catch (error) {
+    console.error("Error generating narration:", error);
+  }
+}
+
 async function sendMessage() {
   const userText = userInput.value.trim();
   if (!userText) return;
@@ -491,6 +531,12 @@ document.addEventListener("DOMContentLoaded", () => {
     if (Tone.Destination.mute) {
       Tone.Destination.mute = false;
     }
+    
+    // Also update narration volume if it's playing
+    if (currentAudio) {
+      currentAudio.volume = Math.pow(10, dB / 20);
+    }
+    
     updateMuteIcon();
   }
 
@@ -504,6 +550,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   muteBtn.addEventListener("click", () => {
     Tone.Destination.mute = !Tone.Destination.mute;
+    
+    // Also mute/unmute narration if it's playing
+    if (currentAudio) {
+      currentAudio.muted = Tone.Destination.mute;
+    }
+    
     updateMuteIcon();
   });
 
