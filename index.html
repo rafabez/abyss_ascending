@@ -95,9 +95,14 @@
   <div id="config-menu">
     <button id="menu-toggle" class="menu-icon" title="Configuration">&#9881;</button>
     <div class="menu-content">
-      <span>Volume</span>
-      <!-- Sound Controls inside configuration menu -->
-      <input type="range" id="volumeSlider" min="-80" max="0" step="1" value="-12" title="Volume">
+      <div class="volume-control">
+        <span>Music Volume</span>
+        <input type="range" id="musicVolumeSlider" min="-80" max="0" step="1" value="-12" title="Music Volume">
+      </div>
+      <div class="volume-control">
+        <span>Narration Volume</span>
+        <input type="range" id="narrationVolumeSlider" min="-80" max="0" step="1" value="-5" title="Narration Volume">
+      </div>
       <button id="muteBtn"></button>
     </div>
   </div>

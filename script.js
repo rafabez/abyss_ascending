@@ -14,6 +14,10 @@ let isPlayingAudio = false; // Flag to track if audio is currently playing
 let preloadedAudios = {}; // Object to store preloaded audio elements
 let maxPreloadCount = 2; // Maximum number of chunks to preload at once
 
+// Global variables for audio control
+let narrationVolume = -5; // Default narration volume (in dB)
+let musicVolume = -12;    // Default music volume (in dB)
+
 // System prompt and initial messages for the RPG
 const systemPrompt = `Abyss Ascending: A Cosmic Ocean Adventure RPG
 
@@ -587,6 +591,10 @@ function preloadNextChunks() {
       // Create audio element and set source
       const audio = new Audio();
       
+      // Set volume using the dedicated narration volume (apply mute if needed)
+      audio.volume = Tone.Destination.mute ? 0 : Math.pow(10, narrationVolume / 20);
+      audio.muted = Tone.Destination.mute;
+      
       // Set up event listener for successful preload
       audio.addEventListener('canplaythrough', () => {
         console.log(`Chunk ${index + 1} preloaded successfully`);
@@ -656,7 +664,7 @@ function playNextInQueue() {
   }
   
   // Set volume to match the current system volume
-  audio.volume = Tone.Destination.mute ? 0 : Math.pow(10, Tone.Destination.volume.value / 20);
+  audio.volume = Math.pow(10, narrationVolume / 20);
   
   // Set up event handlers for playback
   if (!audio.paused && typeof audio.pause === 'function') {
@@ -759,25 +767,17 @@ userInput.addEventListener("keydown", (e) => {
   }
 });
 
-document.addEventListener("DOMContentLoaded", () => {
-  // Configuration Menu Toggle
+document.addEventListener("DOMContentLoaded", function () {
+  // Input and button elements
   const menuToggle = document.getElementById("menu-toggle");
-  const configMenu = document.getElementById("config-menu");
-
-  menuToggle.addEventListener("click", () => {
-    configMenu.classList.toggle("active");
-  });
-
-  const bgBottom = document.getElementById("bg-bottom");
-  bgBottom.style.backgroundImage = "url('abyss_bg.webp')";
-  
-  // Sound control elements
-  const volumeSlider = document.getElementById("volumeSlider");
+  const musicVolumeSlider = document.getElementById("musicVolumeSlider");
+  const narrationVolumeSlider = document.getElementById("narrationVolumeSlider");
   const muteBtn = document.getElementById("muteBtn");
-
-  // SVG icons for mute button.
+  
+  // SVG Icons for speaker states
   const speakerIcon = `<svg width="24" height="24" viewBox="0 0 24 24" fill="#00FFFF" xmlns="http://www.w3.org/2000/svg">
     <path d="M3 9v6h4l5 5V4L7 9H3z"/>
+    <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
     <path d="M14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" opacity=".6"/>
   </svg>`;
   const speakerMuteIcon = `<svg width="24" height="24" viewBox="0 0 24 24" fill="#00FFFF" xmlns="http://www.w3.org/2000/svg">
@@ -786,19 +786,33 @@ document.addEventListener("DOMContentLoaded", () => {
     <path d="M2.1 2.1l19.8 19.8-1.41 1.41L16.5 19.5c-1.16.64-2.48 1-3.84 1-3.87 0-7-3.13-7-7 0-1.36.36-2.68 1-3.84L.69 3.51 2.1 2.1z"/>
   </svg>`;
 
-  function updateVolume() {
-    const dB = parseFloat(volumeSlider.value);
-    Tone.Destination.volume.value = dB;
+  function updateMusicVolume() {
+    musicVolume = parseFloat(musicVolumeSlider.value);
+    Tone.Destination.volume.value = musicVolume;
+    
     if (Tone.Destination.mute) {
       Tone.Destination.mute = false;
     }
     
-    // Also update narration volume if it's playing
+    updateMuteIcon();
+  }
+  
+  // Update the narration volume
+  function updateNarrationVolume() {
+    narrationVolume = parseFloat(narrationVolumeSlider.value);
+    
+    // Update current narration audio if it's playing
     if (currentAudio) {
-      currentAudio.volume = Math.pow(10, dB / 20);
+      // Convert dB to linear scale (0-1)
+      currentAudio.volume = Math.pow(10, narrationVolume / 20);
     }
     
-    updateMuteIcon();
+    // Also update any preloaded audio elements
+    for (let key in preloadedAudios) {
+      if (preloadedAudios[key] && preloadedAudios[key].audio) {
+        preloadedAudios[key].audio.volume = Math.pow(10, narrationVolume / 20);
+      }
+    }
   }
 
   function updateMuteIcon() {
@@ -817,12 +831,30 @@ document.addEventListener("DOMContentLoaded", () => {
       currentAudio.muted = Tone.Destination.mute;
     }
     
+    // Mute any preloaded audio
+    for (let key in preloadedAudios) {
+      if (preloadedAudios[key] && preloadedAudios[key].audio) {
+        preloadedAudios[key].audio.muted = Tone.Destination.mute;
+      }
+    }
+    
     updateMuteIcon();
   });
 
-  volumeSlider.addEventListener("input", updateVolume);
-  updateVolume();
+  musicVolumeSlider.addEventListener("input", updateMusicVolume);
+  narrationVolumeSlider.addEventListener("input", updateNarrationVolume);
+  updateMusicVolume();
+  updateNarrationVolume();
   updateMuteIcon();
+  
+  // Configuration Menu Toggle
+  menuToggle.addEventListener("click", () => {
+    const configMenu = document.getElementById("config-menu");
+    configMenu.classList.toggle("active");
+  });
+
+  const bgBottom = document.getElementById("bg-bottom");
+  bgBottom.style.backgroundImage = "url('abyss_bg.webp')";
   
   // Intro Screen Handling
   const introOverlay = document.getElementById("intro-overlay");

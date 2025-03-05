@@ -2,7 +2,7 @@
 
 ![Abyss Ascending](https://interzone.art.br/abyss_ascending/thumb.png)
 
-**Abyss Ascending** is a web-based **generative interactive fiction** that takes players on an immersive journey through the depths of an **oceanic sci-fi universe**. Featuring **dynamic AI-driven storytelling**, **generative backgrounds**, and an interactive **cosmic submarine interface**, this project blends deep narrative exploration with cutting-edge web technologies.
+**Abyss Ascending** is a web-based **generative interactive fiction** that takes players on an immersive journey through the depths of an **oceanic sci-fi universe**. Featuring **dynamic AI-driven storytelling**, **generative backgrounds**, **audio narration**, and an interactive **cosmic submarine interface**, this project blends deep narrative exploration with cutting-edge web technologies.
 
 🚀 **Live Demo:** [Abyss Ascending](https://interzone.art.br/abyss_ascending/)
 
@@ -15,8 +15,11 @@
 - **🔄 Seamless Background Transitions:** Implemented a **polling mechanism** to fetch images in real time for flawless transitions.
 - **🌌 Sci-Fi Themed UI:** A **futuristic terminal-style** chat system with a glowing, immersive design.
 - **🎵 Procedural Music Generation:** Dynamic MIDI-based soundscapes using **Tone.js** and **Midijourney** for an immersive audio experience.
+- **🎤 Audio Narration:** Text-to-speech narration using the **Pollinations' API** with optimized chunk processing for faster response.
+- **🔊 Separate Audio Controls:** Independent volume sliders for background music and narration.
+- **📱 Welcome Screen:** An engaging intro screen that introduces players to the game before starting the adventure.
 - **🎼 Sound Processing:** Adaptive audio manipulation with delay, reverb, and FM synthesis for deep atmospheric tension.
-- **⚡ Optimized Performance:** Efficient image handling and **auto-retry mechanisms** to ensure smooth image rendering.
+- **⚡ Optimized Performance:** Efficient image and audio handling with **progressive preloading** and **auto-retry mechanisms**.
 - **💻 Responsive Design:** Fully optimized for both **desktop and mobile devices**.
 
 ---
@@ -44,6 +47,7 @@ Then, visit `http://localhost:8000` in your browser.
 
 - **Frontend:** HTML, CSS, JavaScript
 - **AI-Generated Content:** [Pollinations API](https://pollinations.ai)
+- **Text-to-Speech Narration:** Pollinations Audio API with asynchronous queue processing
 - **Dynamic Backgrounds:** Fetching and real-time polling for seamless image transitions
 - **Audio Processing:** **Tone.js** for sound synthesis, adaptive ambient effects, and procedural music generation
 - **Music Prompt Processing:** **Midijourney** for generating short MIDI-based sequences
@@ -54,6 +58,7 @@ Then, visit `http://localhost:8000` in your browser.
 ## 🚀 How It Works
 
 ### 🎭 Story & Gameplay
+- The game begins with an **immersive intro screen** that introduces players to the cosmic ocean universe.
 - Players take on the role of **Captain Delyra Voss**, navigating the advanced submersible spacecraft, **CosmoNautilux**.
 - Each decision impacts the unfolding narrative, leading to multiple branching storylines.
 - The text interface simulates an onboard AI terminal, guiding players through an uncharted abyss.
@@ -64,9 +69,11 @@ Then, visit `http://localhost:8000` in your browser.
 3. **Polls the API** every second until the image is ready.
 4. **Seamlessly updates the background** to match the ongoing story atmosphere.
 
-### 🔄 Auto-Retry & Polling
-- The script continuously checks the image status and reattempts fetching if necessary.
-- This ensures that the generated image is always properly displayed without missing transitions.
+### 🎤 Audio Narration Process
+1. **Splits text** into optimized chunks with smaller first segments for fast initial response.
+2. **Uses Progressive Preloading** to fetch upcoming audio segments while current audio plays.
+3. **Manages an asynchronous audio queue** for seamless playback between segments.
+4. **Provides separate volume controls** for narration and background music.
 
 ### 🎵 Music Generation Process
 1. **Extracts a short, contextually relevant music prompt** from the AI-generated text.
@@ -75,9 +82,18 @@ Then, visit `http://localhost:8000` in your browser.
 4. **Applies effects** such as reverb, delay, and FM synthesis to create an immersive soundscape.
 5. **Loops the music dynamically**, adapting to story progression.
 
+### 🔄 Auto-Retry & Performance Optimizations
+- **Audio Preloading Buffer:** Maintains a sliding window of upcoming audio chunks to eliminate gaps.
+- **Image Polling:** Continuously checks image status and reattempts fetching if necessary.
+- **Event-Driven Architecture:** Uses event listeners for efficient resource management.
+- **Dynamic Resource Allocation:** Prioritizes immediate content while background-loading future content.
+
 ---
 
 ## 🖼️ Screenshots
+
+### Welcome Screen
+![Abyss Ascending Intro Screen](screenshot_AA_intro.jpg)
 
 ### Example Gameplay Scene
 ![Abyss Ascending Screenshot](screenshot_AA_01.jpg)
@@ -106,4 +122,3 @@ For inquiries, feedback, or feature requests, feel free to open an issue or reac
 ---
 
 Happy exploring, Captain! 🌌🤿
-

@@ -271,54 +271,95 @@ header h2 {
   background-color: rgba(0, 255, 255, 0.2);
 }
 
-/* Configuration Menu (replaces the old hamburger menu) */
+/* Configuration Menu */
 #config-menu {
   position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 10;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1000;
 }
 
-@media (max-width: 768px) {
-  #config-menu {
-  top: 100px; /* Move 40px down more on mobile */
-  }
-}
-#menu-toggle {
-  background-color: transparent;
-  border: none; /* Removed circle around the icon */
-  box-shadow: none; /* Removed the shadow effect */
+.menu-icon {
+  background-color: rgba(0, 0, 0, 0.7);
   color: #00FFFF;
+  border: 1px solid #00FFFF;
+  font-size: 1.5rem;
+  padding: 0.5rem;
   cursor: pointer;
-  font-size: 3em; /* Made the gear icon bigger */
-  width: auto;
-  height: auto;
-  display: inline-flex; /* Adjusted the display */
-  align-items: center;
-  justify-content: center;
-  visibility: visible; /* Compatibility fix for browsers */
-  /* Added fallback fonts to support the Unicode gear icon on mobile Firefox */
-  font-family: "Segoe UI Symbol", "Noto Color Emoji", "Apple Color Emoji", sans-serif;
+  border-radius: 4px;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
 }
-#menu-toggle:hover {
-  background-color: rgba(0, 255, 255, 0.2);
-}
+
 .menu-content {
   display: none;
-  flex-direction: column;
-  align-items: center;
-  background: rgba(0, 0, 0, 0.9);
-  border: 2px solid #00FFFF;
-  box-shadow: 0 0 15px #00FFFF;
-  border-radius: 20px;
-  padding: 15px;
-  gap: 10px;
   position: absolute;
-  top: 70px;
   right: 0;
+  top: 3rem;
+  background-color: rgba(0, 0, 0, 0.8);
+  border: 1px solid #00FFFF;
+  border-radius: 4px;
+  padding: 1rem;
+  min-width: 250px;
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.7);
 }
-#config-menu.active .menu-content {
-  display: flex;
+
+#config-menu:hover .menu-content {
+  display: block;
+}
+
+.volume-control {
+  margin-bottom: 1rem;
+}
+
+.volume-control span {
+  display: block;
+  color: #00FFFF;
+  font-family: 'VT323', monospace;
+  margin-bottom: 0.5rem;
+}
+
+.volume-control input[type="range"] {
+  width: 100%;
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+  -webkit-appearance: none;
+  background: rgba(0, 255, 255, 0.2);
+  border-radius: 5px;
+  height: 5px;
+}
+
+.volume-control input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #00FFFF;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+  cursor: pointer;
+}
+
+.volume-control input[type="range"]::-moz-range-thumb {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #00FFFF;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+  cursor: pointer;
+  border: none;
+}
+
+#muteBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: block;
+  margin: 0 auto;
+}
+
+#muteBtn svg {
+  width: 24px;
+  height: 24px;
 }
 
 /* Sound Controls Slider */
