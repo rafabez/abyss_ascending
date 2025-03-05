@@ -72,14 +72,22 @@ function addUserMessageToUI(text, cssClass) {
 // UI: Add assistant message with typing effect
 function addAssistantMessageToUI(text, cssClass, callback) {
   const existingAssistantMessages = messagesDiv.querySelectorAll(`.message.${cssClass}`);
-  existingAssistantMessages.forEach(msg => msg.remove());
+  existingAssistantMessages.forEach(msg => {
+    // Don't remove messages that have the thinking class
+    if (!msg.classList.contains('thinking')) {
+      msg.remove();
+    }
+  });
+  
   const msgDiv = document.createElement("div");
   msgDiv.classList.add("message", cssClass);
   messagesDiv.appendChild(msgDiv);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
   
-  // Generate narration audio for the text
-  generateNarration(text);
+  // Generate narration audio for the text (skip for thinking messages)
+  if (!text.startsWith("Thinking")) {
+    generateNarration(text);
+  }
   
   // Check if text contains a numbered list of options (1-5)
   const hasNumberedList = text.match(/\n\d+\.\s+[^\n]+/g);
@@ -92,7 +100,7 @@ function addAssistantMessageToUI(text, cssClass, callback) {
     if (!firstOptionMatch) {
       // Fall back to normal display if regex fails
       addStandardMessage(parseMarkdown(text), msgDiv, callback);
-      return;
+      return msgDiv;
     }
     
     // Find the index where the options section starts
@@ -196,9 +204,11 @@ function addAssistantMessageToUI(text, cssClass, callback) {
     }
     
     typePreOptions();
+    return msgDiv;
   } else {
     // Original typing effect for regular messages without options
     addStandardMessage(parseMarkdown(text), msgDiv, callback);
+    return msgDiv;
   }
 }
 
@@ -735,14 +745,29 @@ async function sendMessage() {
   addUserMessageToUI(userText, "user-message");
   messages.push({ role: "user", content: userText });
   userInput.value = "";
+  
   try {
     const seed = Math.floor(Math.random() * 1000000); // Generate random seed
-    const response = await fetch("https://text.pollinations.ai/openai", {
+    
+    // Show a "thinking" message
+    const messageElement = addAssistantMessageToUI("Thinking", "gpt-message", () => {});
+    if (messageElement) {
+      messageElement.classList.add("thinking");
+    }
+    
+    const response = await enhancedFetch("https://text.pollinations.ai/openai", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ model: "llama", messages: messages, seed: seed }),
-    });
+    }, 90000, 3);  // 90-second timeout, 3 retries
+    
+    // Remove thinking message
+    if (messageElement) {
+      messageElement.remove();
+    }
+    
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    
     const data = await response.json();
     if (data?.choices?.length > 0) {
       const assistantText = data.choices[0].message.content;
@@ -751,11 +776,11 @@ async function sendMessage() {
       addAssistantMessageToUI(assistantText, "gpt-message", () => {});
       generateMusic(assistantText);
     } else {
-      addAssistantMessageToUI("No response from the system.", "gpt-message", () => {});
+      addAssistantMessageToUI("No response from the system. Please try again.", "gpt-message", () => {});
     }
   } catch (error) {
     console.error("Error:", error);
-    addAssistantMessageToUI("Error: Unable to contact the system.", "gpt-message", () => {});
+    addAssistantMessageToUI(`Error: ${error.name === 'AbortError' ? 'Request timed out' : 'Unable to contact the system'}. Please try again.`, "gpt-message", () => {});
   }
 }
 
@@ -877,3 +902,325 @@ document.addEventListener("DOMContentLoaded", function () {
     }, 1000);
   });
 });
+
+// Enhanced fetch with timeout and retry capabilities
+async function enhancedFetch(url, options = {}, timeoutMs = 60000, maxRetries = 3) {
+  let lastError;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      // Create abort controller for timeout management
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      
+      // Add signal to options
+      const fetchOptions = { 
+        ...options, 
+        signal: controller.signal 
+      };
+      
+      // Attempt fetch
+      const response = await fetch(url, fetchOptions);
+      
+      // Clear timeout
+      clearTimeout(timeoutId);
+      
+      // Return successful response
+      return response;
+    } catch (error) {
+      lastError = error;
+      
+      // Log retry attempts
+      console.warn(`Fetch attempt ${attempt + 1}/${maxRetries} failed: ${error.message}`);
+      
+      // If it's not a timeout or network error, don't retry
+      if (error.name !== 'AbortError' && !error.message.includes('network')) {
+        break;
+      }
+      
+      // Wait with exponential backoff before retrying
+      if (attempt < maxRetries - 1) {
+        const backoffMs = Math.min(1000 * Math.pow(2, attempt), 10000);
+        await new Promise(resolve => setTimeout(resolve, backoffMs));
+      }
+    }
+  }
+  
+  throw lastError || new Error('All fetch attempts failed');
+}
+
+// Enhanced version of pollForImage with better timeout handling
+async function pollForImage(formattedPrompt, maxTime = 60000, interval = 1500) {
+  const start = Date.now();
+  let currentUrl = "";
+  let attemptCount = 0;
+  
+  while (Date.now() - start < maxTime) {
+    attemptCount++;
+    currentUrl = `https://image.pollinations.ai/prompt/${formattedPrompt}&timestamp=${new Date().getTime()}`;
+    
+    try {
+      console.log(`Image poll attempt ${attemptCount}: ${new Date().toISOString()}`);
+      const response = await enhancedFetch(currentUrl, {}, 15000);
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        return { blob, url: currentUrl };
+      }
+    } catch (e) {
+      console.warn(`Image polling error: ${e.message}`);
+    }
+    
+    // Gradually increase interval for subsequent attempts
+    const dynamicInterval = Math.min(interval * Math.sqrt(attemptCount), 5000);
+    await new Promise(resolve => setTimeout(resolve, dynamicInterval));
+  }
+  
+  throw new Error(`Timeout after ${maxTime}ms while polling for image.`);
+}
+
+// Modified sendMessage function to use enhanced fetch
+async function sendMessage() {
+  const userText = userInput.value.trim();
+  if (!userText) return;
+  addUserMessageToUI(userText, "user-message");
+  messages.push({ role: "user", content: userText });
+  userInput.value = "";
+  
+  try {
+    const seed = Math.floor(Math.random() * 1000000); // Generate random seed
+    
+    // Show a "thinking" message
+    const messageElement = addAssistantMessageToUI("Thinking", "gpt-message", () => {});
+    if (messageElement) {
+      messageElement.classList.add("thinking");
+    }
+    
+    const response = await enhancedFetch("https://text.pollinations.ai/openai", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "llama", messages: messages, seed: seed }),
+    }, 90000, 3);  // 90-second timeout, 3 retries
+    
+    // Remove thinking message
+    if (messageElement) {
+      messageElement.remove();
+    }
+    
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    
+    const data = await response.json();
+    if (data?.choices?.length > 0) {
+      const assistantText = data.choices[0].message.content;
+      messages.push({ role: "assistant", content: assistantText });
+      generateImage(assistantText);
+      addAssistantMessageToUI(assistantText, "gpt-message", () => {});
+      generateMusic(assistantText);
+    } else {
+      addAssistantMessageToUI("No response from the system. Please try again.", "gpt-message", () => {});
+    }
+  } catch (error) {
+    console.error("Error:", error);
+    addAssistantMessageToUI(`Error: ${error.name === 'AbortError' ? 'Request timed out' : 'Unable to contact the system'}. Please try again.`, "gpt-message", () => {});
+  }
+}
+
+// Update preloadNextChunks to use enhanced fetch indirectly by improving resilience
+function preloadNextChunks() {
+  const chunksToPreload = audioQueue.slice(0, maxPreloadCount);
+  
+  chunksToPreload.forEach((sentence, index) => {
+    if (!preloadedAudios[index] && sentence) {
+      // Prepare the narration text with "Say:" prefix
+      const narrateText = `Say: ${sentence}`;
+      
+      // Create URL for the Pollinations audio API
+      const url = `https://text.pollinations.ai/${encodeURIComponent(narrateText)}?model=openai-audio&voice=nova`;
+      
+      console.log(`Preloading chunk ${index + 1}: "${sentence.substring(0, 30)}..."`);
+      
+      // Create audio element and set source
+      const audio = new Audio();
+      
+      // Set volume using the dedicated narration volume (apply mute if needed)
+      audio.volume = Tone.Destination.mute ? 0 : Math.pow(10, narrationVolume / 20);
+      audio.muted = Tone.Destination.mute;
+      
+      // Set longer timeout for audio loading
+      const timeoutId = setTimeout(() => {
+        console.warn(`Preload timeout for chunk ${index + 1} - retrying`);
+        // If loading takes too long, create a new Audio object and try again
+        if (preloadedAudios[index]) {
+          audio.src = '';
+          delete preloadedAudios[index];
+          // Schedule a retry with a slight delay
+          setTimeout(() => preloadNextChunks(), 1000);
+        }
+      }, 30000); // 30-second timeout
+      
+      // Set up event listener for successful preload
+      audio.addEventListener('canplaythrough', () => {
+        clearTimeout(timeoutId);
+        console.log(`Chunk ${index + 1} preloaded successfully`);
+      });
+      
+      // Set up error handling with retry
+      let retryCount = 0;
+      const maxRetries = 2;
+      
+      audio.addEventListener('error', () => {
+        clearTimeout(timeoutId);
+        console.error(`Error preloading chunk ${index + 1}`);
+        
+        if (retryCount < maxRetries) {
+          retryCount++;
+          console.log(`Retrying preload (${retryCount}/${maxRetries})...`);
+          
+          // Small delay before retry
+          setTimeout(() => {
+            if (preloadedAudios[index]) {
+              audio.src = `${url}&retry=${retryCount}`;
+              audio.load();
+            }
+          }, 2000 * retryCount); // Increasing backoff
+        } else {
+          // After max retries, remove this preload entry
+          delete preloadedAudios[index];
+        }
+      });
+      
+      // Start preloading by setting the source
+      audio.src = url;
+      
+      // Force loading to begin immediately
+      audio.load();
+      
+      // Store in preloaded audios object
+      preloadedAudios[index] = {
+        audio: audio,
+        sentence: sentence,
+        url: url
+      };
+    }
+  });
+}
+
+// Enhanced playNextInQueue with better timeout handling
+function playNextInQueue() {
+  if (audioQueue.length === 0) {
+    isPlayingAudio = false;
+    return;
+  }
+  
+  if (isPlayingAudio) {
+    return;
+  }
+  
+  isPlayingAudio = true;
+  const nextSentence = audioQueue.shift();
+  let audio;
+  let timeoutId;
+  
+  // Check if we have this chunk preloaded
+  if (preloadedAudios[0] && preloadedAudios[0].sentence === nextSentence) {
+    console.log(`Using preloaded audio for: "${nextSentence.substring(0, 30)}..."`);
+    audio = preloadedAudios[0].audio;
+    
+    // Shift the preloaded audios
+    for (let i = 0; i < maxPreloadCount - 1; i++) {
+      preloadedAudios[i] = preloadedAudios[i + 1];
+    }
+    delete preloadedAudios[maxPreloadCount - 1];
+    
+    // Trigger preload of the next chunk
+    setTimeout(preloadNextChunks, 100); // Small delay to ensure UI responsiveness
+  } else {
+    // If not preloaded, create a new audio element
+    console.log(`Narrating (not preloaded): "${nextSentence.substring(0, 30)}..."`);
+    
+    // Prepare the narration text with "Say:" prefix
+    const narrateText = `Say: ${nextSentence}`;
+    
+    // Create URL for the Pollinations audio API
+    const url = `https://text.pollinations.ai/${encodeURIComponent(narrateText)}?model=openai-audio&voice=nova`;
+    
+    audio = new Audio(url);
+    
+    // Set a loading timeout of 30 seconds
+    timeoutId = setTimeout(() => {
+      console.warn("Audio loading timed out - skipping to next chunk");
+      handleAudioEnd();
+    }, 30000);
+  }
+  
+  // Set volume to match the current system volume
+  audio.volume = Math.pow(10, narrationVolume / 20);
+  
+  // Set up event handlers for playback
+  if (!audio.paused && typeof audio.pause === 'function') {
+    audio.pause();
+  }
+  
+  const audioPlayHandler = () => {
+    if (timeoutId) clearTimeout(timeoutId);
+    
+    audio.play().catch(e => {
+      console.error("Error playing audio:", e);
+      handleAudioEnd();
+    });
+  };
+  
+  // Remove any existing listeners to prevent duplicates
+  audio.removeEventListener('canplaythrough', audioPlayHandler);
+  
+  // Add the event listener
+  audio.addEventListener('canplaythrough', audioPlayHandler);
+  
+  const audioEndHandler = () => handleAudioEnd();
+  
+  // Remove any existing listeners to prevent duplicates
+  audio.removeEventListener('ended', audioEndHandler);
+  
+  // Add the event listener
+  audio.addEventListener('ended', audioEndHandler);
+  
+  const audioErrorHandler = () => {
+    console.error("Error playing audio chunk");
+    if (timeoutId) clearTimeout(timeoutId);
+    handleAudioEnd();
+  };
+  
+  // Remove any existing listeners to prevent duplicates
+  audio.removeEventListener('error', audioErrorHandler);
+  
+  // Add the event listener
+  audio.addEventListener('error', audioErrorHandler);
+  
+  // Function to handle end of audio playback
+  function handleAudioEnd() {
+    isPlayingAudio = false;
+    
+    // Clean up event listeners
+    audio.removeEventListener('canplaythrough', audioPlayHandler);
+    audio.removeEventListener('ended', audioEndHandler);
+    audio.removeEventListener('error', audioErrorHandler);
+    
+    // Clear the timeout if it exists
+    if (timeoutId) clearTimeout(timeoutId);
+    
+    // Play the next sentence when this one finishes
+    playNextInQueue();
+  }
+  
+  // Store reference to control later if needed
+  currentAudio = audio;
+  
+  // Ensure loading starts immediately for non-preloaded audio
+  if (!preloadedAudios[0] || preloadedAudios[0].sentence !== nextSentence) {
+    audio.load();
+  }
+  
+  // Add debug info to check preloading status
+  console.log("Current audio queue length:", audioQueue.length);
+  console.log("Preloaded audio count:", Object.keys(preloadedAudios).length);
+}

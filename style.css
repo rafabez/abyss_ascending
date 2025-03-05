@@ -494,3 +494,24 @@ header h2 {
   font-family: 'VT323', monospace;
   font-size: 1.2em;
 }
+
+/* Thinking indicator */
+.thinking {
+  opacity: 0.7;
+  position: relative;
+}
+
+.thinking::after {
+  content: "...";
+  animation: thinking-dots 1.5s infinite;
+  position: absolute;
+  margin-left: 3px;
+}
+
+@keyframes thinking-dots {
+  0% { content: ""; }
+  25% { content: "."; }
+  50% { content: ".."; }
+  75% { content: "..."; }
+  100% { content: ""; }
+}
