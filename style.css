@@ -294,3 +294,45 @@ header h2 {
 #messages::-webkit-scrollbar-thumb:hover {
   background: #00CCCC;
 }
+
+/* Choice Buttons Styling */
+.choice-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.choice-btn {
+  background-color: transparent;
+  border: 2px solid #00FFFF;
+  color: #00FFFF;
+  border-radius: 50px;
+  cursor: pointer;
+  padding: 0.8em 1em;
+  font-family: 'VT323', monospace;
+  font-size: 1.2em;
+  transition: all 0.3s ease;
+  text-align: left;
+  box-shadow: 0 0 8px #00FFFF;
+}
+
+.choice-btn:hover {
+  background-color: rgba(0, 255, 255, 0.2);
+  box-shadow: 0 0 15px #00FFFF;
+}
+
+.choice-btn:active {
+  transform: scale(0.98);
+  box-shadow: 0 0 20px #00FFFF;
+}
+
+/* Concluding Text after Options */
+.concluding-text {
+  margin-top: 15px;
+  font-style: italic;
+  text-align: center;
+  color: #7af0f0;
+  font-family: 'VT323', monospace;
+  font-size: 1.2em;
+}

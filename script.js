@@ -68,7 +68,130 @@ function addAssistantMessageToUI(text, cssClass, callback) {
   msgDiv.classList.add("message", cssClass);
   messagesDiv.appendChild(msgDiv);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
-  let parsedText = parseMarkdown(text);
+  
+  // Check if text contains a numbered list of options (1-5)
+  const hasNumberedList = text.match(/\n\d+\.\s+[^\n]+/g);
+  
+  if (hasNumberedList && hasNumberedList.length > 0) {
+    // First, identify the start of the options section
+    const firstOptionPattern = /\n([1-5])\.\s+([^\n]+)/;
+    const firstOptionMatch = text.match(firstOptionPattern);
+    
+    if (!firstOptionMatch) {
+      // Fall back to normal display if regex fails
+      addStandardMessage(parseMarkdown(text), msgDiv, callback);
+      return;
+    }
+    
+    // Find the index where the options section starts
+    const firstOptionIndex = text.indexOf(firstOptionMatch[0]);
+    
+    // Get the text before the options
+    const preOptionsText = text.substring(0, firstOptionIndex);
+    
+    // Use regex to find all numbered options
+    const optionsData = [];
+    
+    // More precise regex to extract each option
+    // This captures the option number and its text, but stops at a newline followed by:
+    // - another option number (1-5 followed by period and space)
+    // - OR a blank line
+    // - OR end of string
+    const optionPattern = /\n([1-5])\.\s+([^\n]+)(?=\n[1-5]\.\s+|\n\s*\n|\n*$)/g;
+    
+    let optionMatch;
+    let lastIndex = firstOptionIndex;
+    
+    // Find and process each option
+    while ((optionMatch = optionPattern.exec(text)) !== null) {
+      optionsData.push({
+        number: optionMatch[1],
+        text: optionMatch[2].trim(),
+        fullMatch: optionMatch[0],
+        startIndex: optionMatch.index,
+        endIndex: optionMatch.index + optionMatch[0].length
+      });
+      lastIndex = optionMatch.index + optionMatch[0].length;
+    }
+    
+    // Check if there's content after the options 
+    // (typically a "Choose your next step" or similar message)
+    let concludingText = "";
+    if (lastIndex < text.length) {
+      // Get everything after the last identified option
+      const remainingText = text.substring(lastIndex).trim();
+      
+      // If there's non-empty content and it starts with typical prompt text patterns
+      if (remainingText && 
+         (remainingText.match(/^\s*\n+\s*(Choose|What|Select|Make|Your|Please)/i) || 
+          remainingText.match(/^\s*\n+\s*$/))) {
+        concludingText = remainingText;
+      }
+    }
+    
+    // Parse pre-options text for markdown
+    let preOptionsHtml = parseMarkdown(preOptionsText);
+    
+    // Type the pre-options text first with animation
+    let index = 0;
+    const speed = 10;
+    function typePreOptions() {
+      if (index < preOptionsHtml.length) {
+        if (preOptionsHtml[index] === '<') {
+          const endTag = preOptionsHtml.indexOf('>', index);
+          if (endTag !== -1) {
+            msgDiv.innerHTML += preOptionsHtml.substring(index, endTag + 1);
+            index = endTag + 1;
+            typePreOptions();
+            return;
+          }
+        }
+        msgDiv.innerHTML += preOptionsHtml[index];
+        index++;
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        setTimeout(typePreOptions, speed);
+      } else {
+        // After typing pre-options text, add options as buttons
+        const optionsDiv = document.createElement("div");
+        optionsDiv.classList.add("choice-buttons");
+        
+        optionsData.forEach(option => {
+          const button = document.createElement("button");
+          button.classList.add("choice-btn");
+          // Parse any markdown in the option text (like bold formatting)
+          button.innerHTML = parseMarkdown(option.text);
+          button.addEventListener("click", function() {
+            userInput.value = option.text;
+            sendMessage();
+          });
+          optionsDiv.appendChild(button);
+        });
+        
+        msgDiv.appendChild(optionsDiv);
+        
+        // If there's concluding text, display it after the buttons
+        if (concludingText) {
+          const concludingDiv = document.createElement("div");
+          concludingDiv.classList.add("concluding-text");
+          concludingDiv.innerHTML = parseMarkdown(concludingText);
+          msgDiv.appendChild(concludingDiv);
+        }
+        
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        
+        if (callback) callback();
+      }
+    }
+    
+    typePreOptions();
+  } else {
+    // Original typing effect for regular messages without options
+    addStandardMessage(parseMarkdown(text), msgDiv, callback);
+  }
+}
+
+// Helper function for standard message typing animation
+function addStandardMessage(parsedText, msgDiv, callback) {
   let index = 0;
   const speed = 10;
   function type() {
@@ -191,7 +314,8 @@ async function generateImage(assistantText) {
     });
   } catch (error) {
     console.error("Error loading image after polling:", error);
-    showNotification("Failed to load the generated image after several attempts.");
+    // Silent fail - don't show notification to user
+    // Instead, just keep the existing background
   }
 }
 
