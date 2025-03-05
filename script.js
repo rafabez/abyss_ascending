@@ -9,6 +9,10 @@ let currentMusicPart = null;
 let currentSynths = [];
 let currentEffectNodes = [];
 let currentAudio = null; // Add variable to store the current audio element
+let audioQueue = []; // Array to store queued audio chunks
+let isPlayingAudio = false; // Flag to track if audio is currently playing
+let preloadedAudios = {}; // Object to store preloaded audio elements
+let maxPreloadCount = 2; // Maximum number of chunks to preload at once
 
 // System prompt and initial messages for the RPG
 const systemPrompt = `Abyss Ascending: A Cosmic Ocean Adventure RPG
@@ -433,31 +437,288 @@ async function generateNarration(text) {
       currentAudio = null;
     }
     
-    // Prepare the narration text with "Say:" prefix
-    const narrateText = `Say: ${text}`;
+    // Reset queue and playback state
+    audioQueue = [];
+    isPlayingAudio = false;
     
-    // Create URL for the Pollinations audio API
-    const url = `https://text.pollinations.ai/${encodeURIComponent(narrateText)}?model=openai-audio&voice=nova`;
+    // Split text into sentences for better narration flow
+    const sentences = splitIntoSentences(text);
+    console.log(`Split text into ${sentences.length} chunks for narration`);
     
-    console.log("Generating narration...");
-    
-    // Create audio element and set source
-    const audio = new Audio(url);
-    
-    // Set volume to match the current system volume
-    audio.volume = Tone.Destination.mute ? 0 : Math.pow(10, Tone.Destination.volume.value / 20);
-    
-    // Start playing once loaded
-    audio.addEventListener('canplaythrough', () => {
-      audio.play().catch(e => console.error("Error playing audio:", e));
-    });
-    
-    // Store reference to control later if needed
-    currentAudio = audio;
+    // Process each sentence as a separate audio chunk
+    processAudioQueue(sentences);
     
   } catch (error) {
     console.error("Error generating narration:", error);
   }
+}
+
+// Function to split text into sentences
+function splitIntoSentences(text) {
+  // Remove HTML tags
+  const plainText = text.replace(/<[^>]*>/g, '');
+  
+  // Check if this is the intro text (from first message)
+  const isIntroText = plainText.includes("Greetings, Captain") && 
+                      plainText.includes("Abyssal Interface") && 
+                      plainText.includes("What stirs within you");
+  
+  // Use larger chunks for intro text
+  if (isIntroText) {
+    // Split intro into just 2-3 larger, logical chunks
+    const chunks = [];
+    
+    // Find natural breaking points in the intro text
+    if (plainText.includes("The crew looks to you for guidance")) {
+      const firstPart = plainText.substring(0, plainText.indexOf("The crew looks to you for guidance"));
+      const secondPart = plainText.substring(plainText.indexOf("The crew looks to you for guidance"));
+      
+      chunks.push(firstPart.trim());
+      chunks.push(secondPart.trim());
+    } else {
+      // Fallback if the expected text pattern isn't found
+      chunks.push(plainText);
+    }
+    
+    return chunks;
+  }
+  
+  // For regular text, use paragraph-based chunking for longer sections
+  // First try to split by double newlines (paragraphs)
+  if (plainText.includes("\n\n")) {
+    const paragraphs = plainText.split(/\n\n+/);
+    if (paragraphs.length >= 2) {
+      return paragraphs.map(p => p.trim()).filter(p => p.length > 0);
+    }
+  }
+  
+  // Regular expression to split by sentence endings followed by space or newline
+  const sentenceRegex = /[.!?]+[\s\n]+/;
+  
+  // Split text
+  let sentences = plainText.split(sentenceRegex);
+  
+  // Add back the punctuation (which gets removed by split)
+  sentences = sentences.map((sentence, i) => {
+    if (i < sentences.length - 1) {
+      // Find the punctuation that follows this sentence
+      const match = plainText.match(new RegExp(`${escapeRegExp(sentence)}([.!?]+)`, 'i'));
+      const punctuation = match ? match[1] : '.';
+      return sentence.trim() + punctuation;
+    }
+    return sentence.trim();
+  });
+  
+  // Use larger chunks - combine multiple sentences
+  const maxLength = 300; // Increased max length per chunk
+  let chunks = [];
+  let currentChunk = '';
+  
+  sentences.forEach(sentence => {
+    if (!sentence.trim()) return;
+    
+    const potentialChunk = currentChunk ? `${currentChunk} ${sentence}` : sentence;
+    
+    if (potentialChunk.length > maxLength) {
+      if (currentChunk) chunks.push(currentChunk);
+      currentChunk = sentence;
+    } else {
+      currentChunk = potentialChunk;
+    }
+  });
+  
+  if (currentChunk) chunks.push(currentChunk);
+  
+  // If we ended up with many small chunks, try to combine them further
+  if (chunks.length > 5 && chunks.every(chunk => chunk.length < 100)) {
+    const combinedChunks = [];
+    let combined = '';
+    
+    chunks.forEach(chunk => {
+      if ((combined + ' ' + chunk).length > maxLength) {
+        combinedChunks.push(combined);
+        combined = chunk;
+      } else {
+        combined = combined ? combined + ' ' + chunk : chunk;
+      }
+    });
+    
+    if (combined) combinedChunks.push(combined);
+    return combinedChunks;
+  }
+  
+  return chunks.filter(chunk => chunk.trim().length > 0);
+}
+
+// Helper function to escape special regex characters
+function escapeRegExp(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// Process the audio queue sequentially
+function processAudioQueue(sentences) {
+  // Reset preloaded audios
+  preloadedAudios = {};
+  
+  // Add all sentences to the queue
+  audioQueue = [...sentences];
+  
+  // Start processing the queue
+  playNextInQueue();
+  
+  // Start preloading next chunks
+  preloadNextChunks();
+}
+
+// Preload the next few audio chunks
+function preloadNextChunks() {
+  const chunksToPreload = audioQueue.slice(0, maxPreloadCount);
+  
+  chunksToPreload.forEach((sentence, index) => {
+    if (!preloadedAudios[index] && sentence) {
+      // Prepare the narration text with "Say:" prefix
+      const narrateText = `Say: ${sentence}`;
+      
+      // Create URL for the Pollinations audio API
+      const url = `https://text.pollinations.ai/${encodeURIComponent(narrateText)}?model=openai-audio&voice=nova`;
+      
+      console.log(`Preloading chunk ${index + 1}: "${sentence.substring(0, 30)}..."`);
+      
+      // Create audio element and set source
+      const audio = new Audio();
+      
+      // Set up event listener for successful preload
+      audio.addEventListener('canplaythrough', () => {
+        console.log(`Chunk ${index + 1} preloaded successfully`);
+      });
+      
+      // Set up error handling
+      audio.addEventListener('error', () => {
+        console.error(`Error preloading chunk ${index + 1}`);
+        delete preloadedAudios[index];
+      });
+      
+      // Start preloading by setting the source
+      audio.src = url;
+      
+      // Force loading to begin immediately
+      audio.load();
+      
+      // Store in preloaded audios object
+      preloadedAudios[index] = {
+        audio: audio,
+        sentence: sentence,
+        url: url
+      };
+    }
+  });
+}
+
+// Play the next sentence in the queue
+function playNextInQueue() {
+  if (audioQueue.length === 0) {
+    isPlayingAudio = false;
+    return;
+  }
+  
+  if (isPlayingAudio) {
+    return;
+  }
+  
+  isPlayingAudio = true;
+  const nextSentence = audioQueue.shift();
+  let audio;
+  
+  // Check if we have this chunk preloaded
+  if (preloadedAudios[0] && preloadedAudios[0].sentence === nextSentence) {
+    console.log(`Using preloaded audio for: "${nextSentence.substring(0, 30)}..."`);
+    audio = preloadedAudios[0].audio;
+    
+    // Shift the preloaded audios
+    for (let i = 0; i < maxPreloadCount - 1; i++) {
+      preloadedAudios[i] = preloadedAudios[i + 1];
+    }
+    delete preloadedAudios[maxPreloadCount - 1];
+    
+    // Trigger preload of the next chunk
+    setTimeout(preloadNextChunks, 100); // Small delay to ensure UI responsiveness
+  } else {
+    // If not preloaded, create a new audio element
+    console.log(`Narrating (not preloaded): "${nextSentence.substring(0, 30)}..."`);
+    
+    // Prepare the narration text with "Say:" prefix
+    const narrateText = `Say: ${nextSentence}`;
+    
+    // Create URL for the Pollinations audio API
+    const url = `https://text.pollinations.ai/${encodeURIComponent(narrateText)}?model=openai-audio&voice=nova`;
+    
+    audio = new Audio(url);
+  }
+  
+  // Set volume to match the current system volume
+  audio.volume = Tone.Destination.mute ? 0 : Math.pow(10, Tone.Destination.volume.value / 20);
+  
+  // Set up event handlers for playback
+  if (!audio.paused && typeof audio.pause === 'function') {
+    audio.pause();
+  }
+  
+  const audioPlayHandler = () => {
+    audio.play().catch(e => {
+      console.error("Error playing audio:", e);
+      handleAudioEnd();
+    });
+  };
+  
+  // Remove any existing listeners to prevent duplicates
+  audio.removeEventListener('canplaythrough', audioPlayHandler);
+  
+  // Add the event listener
+  audio.addEventListener('canplaythrough', audioPlayHandler);
+  
+  const audioEndHandler = () => handleAudioEnd();
+  
+  // Remove any existing listeners to prevent duplicates
+  audio.removeEventListener('ended', audioEndHandler);
+  
+  // Add the event listener
+  audio.addEventListener('ended', audioEndHandler);
+  
+  const audioErrorHandler = () => {
+    console.error("Error playing audio chunk");
+    handleAudioEnd();
+  };
+  
+  // Remove any existing listeners to prevent duplicates
+  audio.removeEventListener('error', audioErrorHandler);
+  
+  // Add the event listener
+  audio.addEventListener('error', audioErrorHandler);
+  
+  // Function to handle end of audio playback
+  function handleAudioEnd() {
+    isPlayingAudio = false;
+    
+    // Clean up event listeners
+    audio.removeEventListener('canplaythrough', audioPlayHandler);
+    audio.removeEventListener('ended', audioEndHandler);
+    audio.removeEventListener('error', audioErrorHandler);
+    
+    // Play the next sentence when this one finishes
+    playNextInQueue();
+  }
+  
+  // Store reference to control later if needed
+  currentAudio = audio;
+  
+  // Ensure loading starts immediately for non-preloaded audio
+  if (!preloadedAudios[0] || preloadedAudios[0].sentence !== nextSentence) {
+    audio.load();
+  }
+  
+  // Add debug info to check preloading status
+  console.log("Current audio queue length:", audioQueue.length);
+  console.log("Preloaded audio count:", Object.keys(preloadedAudios).length);
 }
 
 async function sendMessage() {
